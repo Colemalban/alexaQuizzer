@@ -2,7 +2,8 @@ import requests
 import json
 import random
 
-def authorize():
+def authorize(key):
+	print(key)
 	samp = "TWcgSDN2AjYb3qZMdwk7ymVWE4sXrNV2GZDfR78u"
 	url = "https://api.quizlet.com/2.0/users/Steven_Davis1/sets?whitespace=1"
 	headers = {"Authorization": "Bearer TWcgSDN2AjYb3qZMdwk7ymVWE4sXrNV2GZDfR78u"}

@@ -1,3 +1,4 @@
+import re
 from flask import Flask,request,jsonify
 import parser
 from OpenSSL import SSL
@@ -46,8 +47,16 @@ def check_if_correct(quiz,answer):
 def is_quiz_over(quiz):
 	return quiz['index'] >= len(quiz['questions'])	
 
-def generate_start():
-	quiz = parser.authorize()
+#Use regexp to extract the search phrase
+def extract_search_keyword(search_phrase):
+	regexp = re.compile("(quiz|test) me on (\w+)")
+	matches = regexp.match(search_phrase)
+	print(matches.group(2))
+	return matches.group(2)
+
+def generate_start(search_keyword):
+	keyword = extract_search_keyword(search_keyword)
+	quiz = parser.authorize(keyword)
 	json_obj = {}
 	json_obj["version"] = "1.0"
 	resp = {'outputSpeech':{'type':'PlainText','text':'Lets begin. '+quiz['quiz']['questions'][0]['question']}}
@@ -118,7 +127,8 @@ def quizlet_auth():
 @app.route("/",methods=['POST'])
 def test():
 	if(new_quiz()):
-		return generate_start()
+		search_value = request.get_json()['request']['intent']['slots']['QuestionType']['value']
+		return generate_start(search_value)
 	elif(is_answer()):
 		try:
 			return next_question()
