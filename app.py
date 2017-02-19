@@ -44,7 +44,7 @@ def get_current_quiz():
 #Will check if the given anwer is correct and respond accordingly
 def check_if_correct(quiz,answer):
 	question = quiz['questions'][quiz['index']]
-	result = answer in question['answer']
+	result =  question['answer'] in answer
 	quiz['index'] = quiz['index'] + 1
 	quiz['correct'] = quiz['correct'] + 1	
 	return (quiz, result)
@@ -75,7 +75,7 @@ def generate_start():
 
 #This will extract the user answer from the request
 def get_user_answer():
-	return "cole"
+	return request.get_json()['request']['intent']['slots']['QuestionAnswer']['value']
 
 #produce a result string depending if the answer was correct or not
 def parse_result(result):
@@ -95,7 +95,7 @@ def end_quiz():
 def next_question():
 	quiz = get_current_quiz()
 	answer = get_user_answer()
-	quiz,result = check_if_correct(quiz)
+	quiz,result = check_if_correct(quiz, answer)
 	result_string = parse_result(result)
 	if(is_quiz_over(quiz)):
 		return end_quiz()
