@@ -6,14 +6,6 @@ context = SSL.Context(SSL.SSLv23_METHOD)
 
 app = Flask(__name__)
 
-quiz = {
-	"index":0,
-	"correct":0,
-	"questions":[
-		{'question':'what is the capital of maryland','answer':'annapolis'},{'question':'What is the capital of USA','answer':'DC'}
-	]
-}
-
 #Will check if this is an answer
 def is_answer():
 	quiz = get_current_quiz()
@@ -45,31 +37,21 @@ def get_current_quiz():
 #Will check if the given anwer is correct and respond accordingly
 def check_if_correct(quiz,answer):
 	question = quiz['questions'][quiz['index']]
-	result =  question['answer'] in answer
+	result =  question['answer'].lower() in answer
 	quiz['index'] = quiz['index'] + 1
-	quiz['correct'] = quiz['correct'] + 1	
+	if(result):
+		quiz['correct'] = quiz['correct'] + 1	
 	return (quiz, result)
 
 def is_quiz_over(quiz):
 	return quiz['index'] >= len(quiz['questions'])	
 
-#Generate a new quiz session
-def sessionAttr():
-	return {'quiz':quiz}
-
-def generate_response():
-	json_obj = {}
-	json_obj["version"] = "1.0"
-	resp = {'outputSpeech':{'type':'PlainText','text':'What is the capital of maryland'}}
-	resp['shouldEndSession'] = False
-	json_obj['response'] = resp
-	return jsonify(json_obj)
-
 def generate_start():
+	quiz = parser.authorize()
 	json_obj = {}
 	json_obj["version"] = "1.0"
-	resp = {'outputSpeech':{'type':'PlainText','text':'Lets begin. '+quiz['questions'][0]['question']}}
-	json_obj['sessionAttributes'] = sessionAttr()
+	resp = {'outputSpeech':{'type':'PlainText','text':'Lets begin. '+quiz['quiz']['questions'][0]['question']}}
+	json_obj['sessionAttributes'] = quiz 
 	resp['shouldEndSession'] = False 
 	json_obj['response'] = resp
 	return jsonify(json_obj)
@@ -83,16 +65,25 @@ def parse_result(result):
 	if(result):
 		return "That was correct."
 	else:
-		return "That was incorrect."
+		quiz = get_current_quiz()
+		return "That was incorrect. The answer is "+quiz['questions'][quiz['index']-1]['answer']
+
+#Get the final score as a string
+def get_final_score():
+	quiz = get_current_quiz()
+	total_questions = len(quiz['questions'])
+	correct = quiz['correct']
+	return str(correct)+" out of "+str(total_questions)+"."
 
 def end_quiz():
 	json_obj = {}
 	json_obj["version"] = "1.0"
-	resp = {'outputSpeech':{'type':'PlainText','text':'Game over'}}
+	resp = {'outputSpeech':{'type':'PlainText','text':'Game over. Your final score is '+get_final_score()}}
 	resp['shouldEndSession'] = True
 	json_obj['response'] = resp
 	return jsonify(json_obj)
 
+#Get the next question
 def next_question():
 	quiz = get_current_quiz()
 	answer = get_user_answer()
@@ -103,6 +94,17 @@ def next_question():
 	json_obj = {}
 	json_obj["version"] = "1.0"
 	resp = {'outputSpeech':{'type':'PlainText','text':result_string+' Next question. '+quiz['questions'][quiz['index']]['question']}}
+	json_obj['sessionAttributes'] = {'quiz':quiz}
+	resp['shouldEndSession'] = False 
+	json_obj['response'] = resp
+	return jsonify(json_obj)
+
+#If there is an error, repeat a question
+def repeat_question():
+	quiz = get_current_quiz()
+	json_obj = {}
+	json_obj["version"] = "1.0"
+	resp = {'outputSpeech':{'type':'PlainText','text':'I misunderstood. Here is the question again. '+quiz['questions'][quiz['index']]['question']}}
 	json_obj['sessionAttributes'] = {'quiz':quiz}
 	resp['shouldEndSession'] = False 
 	json_obj['response'] = resp
@@ -118,7 +120,10 @@ def test():
 	if(new_quiz()):
 		return generate_start()
 	elif(is_answer()):
-		return next_question()
+		try:
+			return next_question()
+		except:
+			return repeat_question()
 	else:
 		return end_quiz()
 
