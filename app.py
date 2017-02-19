@@ -51,12 +51,12 @@ def is_quiz_over(quiz):
 def extract_search_keyword(search_phrase):
 	regexp = re.compile("(quiz|test) me on (\w+)")
 	matches = regexp.match(search_phrase)
-	print(matches.group(2))
 	return matches.group(2)
 
 def generate_start(search_keyword):
 	keyword = extract_search_keyword(search_keyword)
 	quiz = parser.authorize(keyword)
+	print(quiz)
 	json_obj = {}
 	json_obj["version"] = "1.0"
 	resp = {'outputSpeech':{'type':'PlainText','text':'Lets begin. '+quiz['quiz']['questions'][0]['question']}}
